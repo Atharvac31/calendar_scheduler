@@ -1,0 +1,12 @@
+streamlit
+requests
+langgraph
+langchain
+langchain-community
+langchain-ollama
+google-api-python-client
+google-auth
+google-auth-oauthlib
+python-dateutil
+pytz
+dateparser
