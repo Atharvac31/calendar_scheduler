@@ -61,8 +61,7 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
     """Extract a single datetime from text with timezone handling."""
     text = inject_default_hour_from_phrase(text)
     cleaned = clean_text_for_parsing(text)
-    
-    # Parse with timezone awareness
+
     dt = dateparser.parse(
         cleaned,
         settings={
@@ -71,30 +70,16 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
             'RETURN_AS_TIMEZONE_AWARE': True
         }
     )
-    
-    # Fallback patterns
-    if not dt:
-        fallback_match = re.search(
-            r'(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?::\d{2})?\s*(am|pm)',
-            cleaned,
-            re.IGNORECASE
-        )
-        if fallback_match:
-            dt = dateparser.parse(fallback_match.group(0))
 
-    if not dt:
-        relative_match = re.search(
-            r'(tomorrow|today|next\s+\w+|this\s+\w+)?\s*\d{1,2}(?::\d{2})?\s*(am|pm)',
-            cleaned
-        )
-        if relative_match:
-            dt = dateparser.parse(relative_match.group(0))
-
+    # 🛠️ Fallback: if date is parsed without time, assume 9 AM
     if dt:
+        dt = ensure_timezone(dt)
         if dt.hour == 0 and dt.minute == 0:
             dt = dt.replace(hour=9, minute=0)
-        return ensure_timezone(dt)
+        return dt
+
     return None
+
 
 def extract_times_for_reschedule(text: str) -> Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
     """Extract both old and new times with timezone handling."""
