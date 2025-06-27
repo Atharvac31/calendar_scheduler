@@ -12,17 +12,18 @@ INDIA_TZ = pytz.timezone("Asia/Kolkata")
 
 # ---------------------- Auth ----------------------
 def get_calendar_service():
-    """Load credentials securely from Streamlit secrets."""
+    """Load credentials from Streamlit secrets (sectioned)."""
     creds_data = {
-        "client_id": st.secrets["GOOGLE_CLIENT_ID"],
-        "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
-        "refresh_token": st.secrets["GOOGLE_REFRESH_TOKEN"],
+        "client_id": st.secrets["oauth_credentials"]["GOOGLE_CLIENT_ID"],
+        "client_secret": st.secrets["oauth_credentials"]["GOOGLE_CLIENT_SECRET"],
+        "refresh_token": st.secrets["token_info"]["GOOGLE_REFRESH_TOKEN"],
         "token_uri": "https://oauth2.googleapis.com/token",
         "type": "authorized_user"
     }
 
-    creds = Credentials.from_authorized_user_info(info=creds_data, scopes=SCOPES)
-    return build('calendar', 'v3', credentials=creds)
+    creds = Credentials.from_authorized_user_info(info=creds_data, scopes=["https://www.googleapis.com/auth/calendar"])
+    return build("calendar", "v3", credentials=creds)
+
 
 # ---------------------- Helpers ----------------------
 def ensure_timezone(dt: datetime.datetime) -> datetime.datetime:
