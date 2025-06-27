@@ -58,10 +58,11 @@ def ensure_timezone(dt: datetime.datetime) -> datetime.datetime:
     return dt.astimezone(INDIA_TZ)
 
 def extract_single_time(text: str) -> Optional[datetime.datetime]:
+    """Extract a single datetime from text with timezone handling."""
     text = inject_default_hour_from_phrase(text)
     cleaned = clean_text_for_parsing(text)
-
-    # First, try parsing the full text
+    
+    # Parse with timezone awareness
     dt = dateparser.parse(
         cleaned,
         settings={
@@ -70,25 +71,30 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
             'RETURN_AS_TIMEZONE_AWARE': True
         }
     )
-
-    # Fallback for relative date without time (e.g., 'this Sunday')
+    
+    # Fallback patterns
     if not dt:
-        fallback_match = re.search(r'\b(?:this|next)?\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b', cleaned)
+        fallback_match = re.search(
+            r'(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?::\d{2})?\s*(am|pm)',
+            cleaned,
+            re.IGNORECASE
+        )
         if fallback_match:
-            fallback_text = fallback_match.group(0) + " 9 AM"
-            dt = dateparser.parse(
-                fallback_text,
-                settings={
-                    'PREFER_DATES_FROM': 'future',
-                    'RELATIVE_BASE': datetime.datetime.now(INDIA_TZ),
-                    'RETURN_AS_TIMEZONE_AWARE': True
-                }
-            )
+            dt = dateparser.parse(fallback_match.group(0))
+
+    if not dt:
+        relative_match = re.search(
+            r'(tomorrow|today|next\s+\w+|this\s+\w+)?\s*\d{1,2}(?::\d{2})?\s*(am|pm)',
+            cleaned
+        )
+        if relative_match:
+            dt = dateparser.parse(relative_match.group(0))
 
     if dt:
+        if dt.hour == 0 and dt.minute == 0:
+            dt = dt.replace(hour=9, minute=0)
         return ensure_timezone(dt)
     return None
-
 
 def extract_times_for_reschedule(text: str) -> Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
     """Extract both old and new times with timezone handling."""
