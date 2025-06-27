@@ -168,9 +168,20 @@ def handle_user_input(user_input: str) -> str:
 
         if intent == "cancel":
             if "tomorrow" in user_input.lower() and not re.search(r'\d{1,2}(?::\d{2})?\s*(am|pm)', user_input.lower()):
-        # List tomorrow's events and ask user to clarify
                 tomorrow = datetime.datetime.now(INDIA_TZ) + datetime.timedelta(days=1)
-                return "❗ Please specify the time. For example: 'cancel meeting tomorrow at 3 PM'"
+                from calendar_utils import list_upcoming_events
+                response = list_upcoming_events(max_results=10)  # Adjust limit as needed
+                filtered = []
+
+                for line in response.split("\n"):
+                    if tomorrow.strftime("%A, %d %B %Y") in line:
+                        filtered.append(line)
+
+                if filtered:
+                    return "📅 Events on tomorrow:\n" + "\n".join(filtered) + "\n❗ Please specify a time to cancel."
+                else:
+                    return "📭 No events found for tomorrow to cancel."
+
             return cancel_event_by_summary("TailorTalk Meeting", parsed_time)
 
         elif intent == "check":
