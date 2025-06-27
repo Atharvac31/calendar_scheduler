@@ -167,7 +167,12 @@ def handle_user_input(user_input: str) -> str:
             return "❌ I couldn't understand the time. Try formats like '28 June 10 PM' or 'tomorrow at 3 PM'."
 
         if intent == "cancel":
+            if "tomorrow" in user_input.lower() and not re.search(r'\d{1,2}(?::\d{2})?\s*(am|pm)', user_input.lower()):
+        # List tomorrow's events and ask user to clarify
+                tomorrow = datetime.datetime.now(INDIA_TZ) + datetime.timedelta(days=1)
+                return "❗ Please specify the time. For example: 'cancel meeting tomorrow at 3 PM'"
             return cancel_event_by_summary("TailorTalk Meeting", parsed_time)
+
         elif intent == "check":
             return get_free_slots(parsed_time)
         elif intent == "book":
