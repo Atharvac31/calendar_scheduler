@@ -58,10 +58,10 @@ def ensure_timezone(dt: datetime.datetime) -> datetime.datetime:
     return dt.astimezone(INDIA_TZ)
 
 def extract_single_time(text: str) -> Optional[datetime.datetime]:
-    """Extract a single datetime from text with timezone handling."""
     text = inject_default_hour_from_phrase(text)
     cleaned = clean_text_for_parsing(text)
 
+    # First, try parsing the full text
     dt = dateparser.parse(
         cleaned,
         settings={
@@ -71,13 +71,22 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
         }
     )
 
-    # 🛠️ Fallback: if date is parsed without time, assume 9 AM
-    if dt:
-        dt = ensure_timezone(dt)
-        if dt.hour == 0 and dt.minute == 0:
-            dt = dt.replace(hour=9, minute=0)
-        return dt
+    # Fallback for relative date without time (e.g., 'this Sunday')
+    if not dt:
+        fallback_match = re.search(r'\b(?:this|next)?\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b', cleaned)
+        if fallback_match:
+            fallback_text = fallback_match.group(0) + " 9 AM"
+            dt = dateparser.parse(
+                fallback_text,
+                settings={
+                    'PREFER_DATES_FROM': 'future',
+                    'RELATIVE_BASE': datetime.datetime.now(INDIA_TZ),
+                    'RETURN_AS_TIMEZONE_AWARE': True
+                }
+            )
 
+    if dt:
+        return ensure_timezone(dt)
     return None
 
 
