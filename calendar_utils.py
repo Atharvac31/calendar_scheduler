@@ -18,7 +18,7 @@ INDIA_TZ = pytz.timezone("Asia/Kolkata")
 # ---------------------- Google Calendar Auth ----------------------
 
 def get_calendar_service():
-    """Load credentials from environment or secrets."""
+    """Load credentials from environment variables and return Google Calendar service."""
     creds_data = {
         "client_id": os.getenv("GOOGLE_CLIENT_ID"),
         "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
@@ -27,13 +27,15 @@ def get_calendar_service():
         "type": "authorized_user"
     }
 
-    # Debug only:
-    if not all(creds_data.values()):
-        missing = [k for k, v in creds_data.items() if not v]
-        raise ValueError(f"Missing credentials: {missing}")
+    # Check for missing credentials
+    missing = [key for key, value in creds_data.items() if not value]
+    if missing:
+        raise ValueError(f"❌ Missing credentials in environment: {missing}")
 
+    # Build credentials and service
     creds = Credentials.from_authorized_user_info(info=creds_data, scopes=SCOPES)
-    return build("calendar", "v3", credentials=creds)
+    service = build('calendar', 'v3', credentials=creds)
+    return service
 
 
 # ---------------------- Helper Functions ----------------------
