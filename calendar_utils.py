@@ -26,6 +26,9 @@ def get_calendar_service():
         "token_uri": "https://oauth2.googleapis.com/token",
         "type": "authorized_user"
     }
+    print(os.getenv("GOOGLE_CLIENT_ID"))
+    print(os.getenv("GOOGLE_CLIENT_SECRET"))
+    print(os.getenv("GOOGLE_REFRESH_TOKEN"))
 
     # Check for missing credentials
     missing = [key for key, value in creds_data.items() if not value]
