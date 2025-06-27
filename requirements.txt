@@ -1,0 +1,12 @@
+streamlit
+requests
+uvicorn
+fastapi
+python-dotenv
+pytz
+google-auth
+google-auth-oauthlib
+google-api-python-client
+langgraph
+langchain
+langchain-community
