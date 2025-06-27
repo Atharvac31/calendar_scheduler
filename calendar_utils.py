@@ -8,7 +8,9 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 # ---------------------- Load Environment ----------------------
-load_dotenv()
+# Only for local development
+if os.getenv("STREAMLIT_CLOUD") != "true":
+    load_dotenv()
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 INDIA_TZ = pytz.timezone("Asia/Kolkata")
@@ -16,7 +18,7 @@ INDIA_TZ = pytz.timezone("Asia/Kolkata")
 # ---------------------- Google Calendar Auth ----------------------
 
 def get_calendar_service():
-    """Build and return the Google Calendar service from .env credentials."""
+    """Load credentials from environment or secrets."""
     creds_data = {
         "client_id": os.getenv("GOOGLE_CLIENT_ID"),
         "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
@@ -24,8 +26,15 @@ def get_calendar_service():
         "token_uri": "https://oauth2.googleapis.com/token",
         "type": "authorized_user"
     }
+
+    # Debug only:
+    if not all(creds_data.values()):
+        missing = [k for k, v in creds_data.items() if not v]
+        raise ValueError(f"Missing credentials: {missing}")
+
     creds = Credentials.from_authorized_user_info(info=creds_data, scopes=SCOPES)
     return build("calendar", "v3", credentials=creds)
+
 
 # ---------------------- Helper Functions ----------------------
 
