@@ -21,9 +21,9 @@ from calendar_utils import (
 if os.getenv("USE_OLLAMA", "false").lower() == "true":
      # Local inference through Ollama → http://localhost:11434
      from llm_ollama import chat as llm_chat  # noqa: F401  (imported for future use)
-else:
+# else:
      # Cloud‑hosted model (e.g. OpenAI / Together / Groq)
-     from openai_client import chat as llm_chat  # type: ignore  # noqa: F401
+    #  from openai_client import chat as llm_chat  # type: ignore  # noqa: F401
 
  # ----------------------------------------------------------------------------------
  # 🕒 Timezone setup
