@@ -66,14 +66,12 @@ def inject_default_hour(text: str) -> str:
 def extract_single_time(text: str) -> Optional[datetime.datetime]:
     text = inject_default_hour(text)
 
-    # Remove extra distracting words before parsing
-    noise_words = ["meeting", "call", "event", "appointment", "session"]
-    for word in noise_words:
+    # Remove noise words like "meeting"
+    for word in ["meeting", "appointment", "call", "event"]:
         text = text.replace(word, "")
 
     cleaned = clean_text(text)
 
-    # First attempt
     dt = dateparser.parse(
         cleaned,
         settings={
@@ -85,25 +83,11 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
         }
     )
 
-    # Fallback 1: pattern like "25 July 11:30 PM"
+    # Manual fallback: "today 11pm", "tomorrow 3pm"
     if not dt:
-        m = re.search(
-            r"\d{1,2}(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?::\d{2})?\s*(am|pm)?",
-            cleaned,
-            re.IGNORECASE,
-        )
-        if m:
-            dt = dateparser.parse(m.group(0))
-
-    # Fallback 2: pattern like "tomorrow 11:30 PM"
-    if not dt:
-        m = re.search(
-            r"(today|tomorrow|next\s+\w+|this\s+\w+)?[^0-9]*\d{1,2}(?::\d{2})?\s*(am|pm)?",
-            cleaned,
-            re.IGNORECASE,
-        )
-        if m:
-            dt = dateparser.parse(m.group(0))
+        today_match = re.search(r"\b(today|tomorrow|tonight|this\s+\w+|next\s+\w+)\b.*?\b\d{1,2}(?::\d{2})?\s*(am|pm)\b", cleaned)
+        if today_match:
+            dt = dateparser.parse(today_match.group(0))
 
     if dt:
         if dt.hour == 0 and dt.minute == 0:
@@ -128,7 +112,9 @@ def extract_times_for_reschedule(text: str) -> Tuple[Optional[datetime.datetime]
     return None, None
 
 def is_greeting(text: str) -> bool:
-    return text.lower() in GREETINGS
+    GREETING_KEYWORDS = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good evening"]
+    return any(fuzz.ratio(text.lower(), word) > 85 for word in GREETING_KEYWORDS)
+
 
 def fuzzy_match(text: str, choices: List[str], threshold: int = 85) -> Optional[str]:
     for choice in choices:
