@@ -122,7 +122,7 @@ def detect_intent(text: str) -> str:
     text_lc = text.lower().strip(",.!? ")
 
     if any(greet in text_lc for greet in ["hi", "hii", "hello", "hey"]):
-        return "greet"
+        return "greeting"
 
     if "help" in text_lc:
         return "help"
