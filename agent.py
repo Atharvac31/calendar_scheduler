@@ -64,14 +64,18 @@ def inject_default_hour(text: str) -> str:
     return text
 
 def extract_single_time(text: str) -> Optional[datetime.datetime]:
+    # Save original in case fallback needed
+    original_text = text
+
     text = inject_default_hour(text)
 
-    # Remove noise words like "meeting"
+    # Remove only soft noise words that interfere (don't remove month/day info)
     for word in ["meeting", "appointment", "call", "event"]:
         text = text.replace(word, "")
 
     cleaned = clean_text(text)
 
+    # First attempt
     dt = dateparser.parse(
         cleaned,
         settings={
@@ -83,11 +87,25 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
         }
     )
 
-    # Manual fallback: "today 11pm", "tomorrow 3pm"
+    # Fallback for things like "26th July 2pm"
     if not dt:
-        today_match = re.search(r"\b(today|tomorrow|tonight|this\s+\w+|next\s+\w+)\b.*?\b\d{1,2}(?::\d{2})?\s*(am|pm)\b", cleaned)
-        if today_match:
-            dt = dateparser.parse(today_match.group(0))
+        fallback_match = re.search(
+            r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?::\d{2})?\s*(am|pm)?",
+            original_text,
+            re.IGNORECASE,
+        )
+        if fallback_match:
+            dt = dateparser.parse(fallback_match.group(0))
+
+    # Fallback for "tomorrow 3pm"
+    if not dt:
+        relative_match = re.search(
+            r"(tomorrow|today|tonight|next\s+\w+|this\s+\w+)?\s*\d{1,2}(?::\d{2})?\s*(am|pm)",
+            original_text,
+            re.IGNORECASE,
+        )
+        if relative_match:
+            dt = dateparser.parse(relative_match.group(0))
 
     if dt:
         if dt.hour == 0 and dt.minute == 0:
