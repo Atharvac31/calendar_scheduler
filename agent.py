@@ -65,8 +65,15 @@ def inject_default_hour(text: str) -> str:
 
 def extract_single_time(text: str) -> Optional[datetime.datetime]:
     text = inject_default_hour(text)
+
+    # Remove extra distracting words before parsing
+    noise_words = ["meeting", "call", "event", "appointment", "session"]
+    for word in noise_words:
+        text = text.replace(word, "")
+
     cleaned = clean_text(text)
 
+    # First attempt
     dt = dateparser.parse(
         cleaned,
         settings={
@@ -78,24 +85,25 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
         }
     )
 
-    # Fallback: try parsing known patterns like "tomorrow 3 PM"
+    # Fallback 1: pattern like "25 July 11:30 PM"
     if not dt:
         m = re.search(
-            r"(today|tomorrow|next\s+\w+|this\s+\w+)?[^0-9]*\d{1,2}(?::\d{2})?\s*(am|pm)",
+            r"\d{1,2}(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?::\d{2})?\s*(am|pm)?",
             cleaned,
-            re.IGNORECASE
+            re.IGNORECASE,
         )
         if m:
-            dt = dateparser.parse(
-                m.group(0),
-                settings={
-                    'PREFER_DATES_FROM': 'future',
-                    'RELATIVE_BASE': datetime.datetime.now(INDIA_TZ),
-                    'RETURN_AS_TIMEZONE_AWARE': True,
-                    'TIMEZONE': 'Asia/Kolkata',
-                    'TO_TIMEZONE': 'Asia/Kolkata',
-                }
-            )
+            dt = dateparser.parse(m.group(0))
+
+    # Fallback 2: pattern like "tomorrow 11:30 PM"
+    if not dt:
+        m = re.search(
+            r"(today|tomorrow|next\s+\w+|this\s+\w+)?[^0-9]*\d{1,2}(?::\d{2})?\s*(am|pm)?",
+            cleaned,
+            re.IGNORECASE,
+        )
+        if m:
+            dt = dateparser.parse(m.group(0))
 
     if dt:
         if dt.hour == 0 and dt.minute == 0:
@@ -103,6 +111,7 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
         return ensure_timezone(dt)
 
     return None
+
 
 
 def extract_times_for_reschedule(text: str) -> Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
