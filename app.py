@@ -4,7 +4,7 @@ from agent import process_message
 
 st.set_page_config(page_title="📅 Calendar Scheduler", layout="centered")
 st.title("📆 Calendar Scheduler")
-st.caption("Powered by Google Calendar API + Ollama (Mistral)")
+st.caption("Powered by Google Calendar API ")
 
 # 🗂️ Initialize chat history
 if "messages" not in st.session_state:
