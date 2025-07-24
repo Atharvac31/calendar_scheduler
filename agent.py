@@ -109,15 +109,33 @@ def fuzzy_match(text: str, choices: List[str], threshold: int = 85) -> Optional[
 
 
 # ---------------------- Intent Detection ----------------------
+# def detect_intent(text: str) -> str:
+#     if is_greeting(text):
+#         return "greeting"
+#     for intent, pattern in INTENT_PATTERNS.items():
+#         if re.search(pattern, text.lower()):
+#             return intent
+#     if extract_single_time(text):
+#         return "book"
+#     return "unknown"
 def detect_intent(text: str) -> str:
-    if is_greeting(text):
-        return "greeting"
+    text_lc = text.lower().strip(",.!? ")
+
+    if any(greet in text_lc for greet in ["hi", "hii", "hello", "hey"]):
+        return "greet"
+
+    if "help" in text_lc:
+        return "help"
+
     for intent, pattern in INTENT_PATTERNS.items():
-        if re.search(pattern, text.lower()):
+        if re.search(pattern, text_lc):
             return intent
-    if extract_single_time(text):
+
+    if extract_single_time(text_lc):
         return "book"
+
     return "unknown"
+
 
 
 # ---------------------- Handler ----------------------
