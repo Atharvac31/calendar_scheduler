@@ -66,24 +66,56 @@ def inject_default_hour(text: str) -> str:
 def extract_single_time(text: str) -> Optional[datetime.datetime]:
     text = inject_default_hour(text)
     cleaned = clean_text(text)
+
+    # 1. Try standard parsing first
     dt = dateparser.parse(cleaned, settings={
         'PREFER_DATES_FROM': 'future',
         'RELATIVE_BASE': datetime.datetime.now(INDIA_TZ),
         'RETURN_AS_TIMEZONE_AWARE': True
     })
+
+    # 2. Fallback: handle cases like "at 9PM", "9:00PM today"
     if not dt:
-        m = re.search(r"(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?::\d{2})?\s*(am|pm)", cleaned, re.IGNORECASE)
+        time_match = re.search(r"\b\d{1,2}(:\d{2})?\s*(am|pm)\b", cleaned, re.IGNORECASE)
+        if time_match:
+            time_str = time_match.group(0)
+            today_str = datetime.datetime.now(INDIA_TZ).strftime("%Y-%m-%d")
+            dt = dateparser.parse(
+                f"{today_str} {time_str}",
+                settings={
+                    "TIMEZONE": "Asia/Kolkata",
+                    "RETURN_AS_TIMEZONE_AWARE": True
+                }
+            )
+
+    # 3. Fallback: "20th Aug 9PM"
+    if not dt:
+        m = re.search(
+            r"(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?::\d{2})?\s*(am|pm)",
+            cleaned,
+            re.IGNORECASE
+        )
         if m:
             dt = dateparser.parse(m.group(0))
+
+    # 4. Fallback: vague relative phrases
     if not dt:
-        m = re.search(r"(tomorrow|today|next\\s+\\w+|this\\s+\\w+)?\\s*\\d{1,2}(?::\\d{2})?\\s*(am|pm)", cleaned)
+        m = re.search(
+            r"(tomorrow|today|next\s+\w+|this\s+\w+)?\s*\d{1,2}(?::\d{2})?\s*(am|pm)",
+            cleaned,
+            re.IGNORECASE
+        )
         if m:
             dt = dateparser.parse(m.group(0))
+
+    # 5. Normalize
     if dt:
         if dt.hour == 0 and dt.minute == 0:
             dt = dt.replace(hour=9, minute=0)
         return ensure_timezone(dt)
+
     return None
+
 
 def extract_times_for_reschedule(text: str) -> Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
     m = re.search(r"from\\s+(.+?)\\s+to\\s+(.+)", text, re.IGNORECASE)
