@@ -46,7 +46,7 @@ def ensure_timezone(dt: datetime.datetime) -> datetime.datetime:
 
 def clean_text(text: str) -> str:
     cleaned = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", text.lower())
-    cleaned = re.sub(r"\b(at|on|from|to)\b", "", cleaned)
+    # cleaned = re.sub(r"\b(at|on|from|to)\b", "", cleaned)
     return cleaned.strip(",.!? ")
 
 def inject_default_hour(text: str) -> str:
