@@ -117,17 +117,22 @@ def extract_single_time(text: str) -> Optional[datetime.datetime]:
 
 
 def extract_times_for_reschedule(text: str) -> Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
-    m = re.search(r"from\\s+(.+?)\\s+to\\s+(.+)", text, re.IGNORECASE)
+    # Pattern: "from 10 AM to 1 PM today"
+    m = re.search(r"from\s+(.+?)\s+to\s+(.+)", text, re.IGNORECASE)
     if m:
         old_time = extract_single_time(m.group(1))
         new_time = extract_single_time(m.group(2))
         return old_time, new_time
-    times = re.findall(r"\\b\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)\\b", text.lower())
+
+    # Fallback: pick two times from message
+    times = re.findall(r"\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b", text.lower())
     if len(times) >= 2:
         old = extract_single_time(times[0])
         new = extract_single_time(times[1])
         return old, new
+
     return None, None
+
 
 def is_greeting(text: str) -> bool:
     GREETING_KEYWORDS = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good evening"]
@@ -158,7 +163,7 @@ def handle_user_input(user_input: str) -> str:
     intent = detect_intent(user_input)
 
     if intent == "greeting":
-        return "👋 Hello! I'm your calendar assistant. Try saying 'Book a meeting tomorrow at 3 PM'."
+        return "👋 Hello! I'm your calendar assistant'."
 
     if intent == "help":
         return HELP_RESPONSE
